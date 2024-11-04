@@ -2,14 +2,25 @@
 	import {
 		addTagById,
 		deleteTagById,
-		getAllChatTags,
+		getAllTags,
+		getChatList,
+		getChatListByTagName,
 		getTagsById,
 		updateChatById
 	} from '$lib/apis/chats';
-	import { tags as _tags } from '$lib/stores';
-	import { onMount } from 'svelte';
+	import {
+		tags as _tags,
+		chats,
+		pinnedChats,
+		currentChatPage,
+		scrollPaginationEnabled
+	} from '$lib/stores';
+	import { createEventDispatcher, onMount } from 'svelte';
+
+	const dispatch = createEventDispatcher();
 
 	import Tags from '../common/Tags.svelte';
+	import { toast } from 'svelte-sonner';
 
 	export let chatId = '';
 	let tags = [];
@@ -21,25 +32,36 @@
 	};
 
 	const addTag = async (tagName) => {
-		const res = await addTagById(localStorage.token, chatId, tagName);
-		tags = await getTags();
+		const res = await addTagById(localStorage.token, chatId, tagName).catch(async (error) => {
+			toast.error(error);
+			return null;
+		});
+		if (!res) {
+			return;
+		}
 
+		tags = await getTags();
 		await updateChatById(localStorage.token, chatId, {
 			tags: tags
 		});
 
-		_tags.set(await getAllChatTags(localStorage.token));
+		await _tags.set(await getAllTags(localStorage.token));
+		dispatch('add', {
+			name: tagName
+		});
 	};
 
 	const deleteTag = async (tagName) => {
 		const res = await deleteTagById(localStorage.token, chatId, tagName);
 		tags = await getTags();
-
 		await updateChatById(localStorage.token, chatId, {
 			tags: tags
 		});
 
-		_tags.set(await getAllChatTags(localStorage.token));
+		await _tags.set(await getAllTags(localStorage.token));
+		dispatch('delete', {
+			name: tagName
+		});
 	};
 
 	onMount(async () => {
@@ -49,4 +71,12 @@
 	});
 </script>
 
-<Tags {tags} {deleteTag} {addTag} />
+<Tags
+	{tags}
+	on:delete={(e) => {
+		deleteTag(e.detail);
+	}}
+	on:add={(e) => {
+		addTag(e.detail);
+	}}
+/>

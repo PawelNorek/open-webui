@@ -30,6 +30,8 @@ export const getAudioConfig = async (token: string) => {
 type OpenAIConfigForm = {
 	url: string;
 	key: string;
+	model: string;
+	speaker: string;
 };
 
 export const updateAudioConfig = async (token: string, payload: OpenAIConfigForm) => {
@@ -95,7 +97,8 @@ export const transcribeAudio = async (token: string, file: File) => {
 export const synthesizeOpenAISpeech = async (
 	token: string = '',
 	speaker: string = 'alloy',
-	text: string = ''
+	text: string = '',
+	model?: string
 ) => {
 	let error = null;
 
@@ -106,14 +109,74 @@ export const synthesizeOpenAISpeech = async (
 			'Content-Type': 'application/json'
 		},
 		body: JSON.stringify({
-			model: 'tts-1',
 			input: text,
-			voice: speaker
+			voice: speaker,
+			...(model && { model })
 		})
 	})
 		.then(async (res) => {
 			if (!res.ok) throw await res.json();
 			return res;
+		})
+		.catch((err) => {
+			error = err.detail;
+			console.log(err);
+
+			return null;
+		});
+
+	if (error) {
+		throw error;
+	}
+
+	return res;
+};
+
+interface AvailableModelsResponse {
+	models: { name: string; id: string }[] | { id: string }[];
+}
+
+export const getModels = async (token: string = ''): Promise<AvailableModelsResponse> => {
+	let error = null;
+
+	const res = await fetch(`${AUDIO_API_BASE_URL}/models`, {
+		method: 'GET',
+		headers: {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${token}`
+		}
+	})
+		.then(async (res) => {
+			if (!res.ok) throw await res.json();
+			return res.json();
+		})
+		.catch((err) => {
+			error = err.detail;
+			console.log(err);
+
+			return null;
+		});
+
+	if (error) {
+		throw error;
+	}
+
+	return res;
+};
+
+export const getVoices = async (token: string = '') => {
+	let error = null;
+
+	const res = await fetch(`${AUDIO_API_BASE_URL}/voices`, {
+		method: 'GET',
+		headers: {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${token}`
+		}
+	})
+		.then(async (res) => {
+			if (!res.ok) throw await res.json();
+			return res.json();
 		})
 		.catch((err) => {
 			error = err.detail;

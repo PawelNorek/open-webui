@@ -1,7 +1,11 @@
 <script lang="ts">
-	export let src = '/user.png';
+	import { settings } from '$lib/stores';
+	import ProfileImageBase from './ProfileImageBase.svelte';
+
+	export let className = 'size-8';
+	export let src = '';
 </script>
 
-<div class=" mr-4">
-	<img {src} class=" max-w-[28px] object-cover rounded-full" alt="profile" draggable="false" />
+<div class={`flex-shrink-0 ${($settings?.chatDirection ?? 'LTR') === 'LTR' ? 'mr-3' : 'ml-3'}`}>
+	<ProfileImageBase {src} {className} />
 </div>
